@@ -1,41 +1,52 @@
 # syntax=docker/dockerfile:1
+
 ########################################
-# 1) Build Meili and fetch the UI
+# 1) Build MeiliSearch (upstream image)
 ########################################
 ARG MEILI_VERSION=v0.28.0
 FROM getmeili/meilisearch:${MEILI_VERSION} AS meili
 
+########################################
+# 2) Build the Meili Dashboard UI
+########################################
 FROM node:20-alpine AS ui-builder
 WORKDIR /app
-# Pull the official Meili Dashboard (replace with the latest release tag)
+
+# Choose the Dashboard release you want
 ARG DASHBOARD_VERSION=v0.3.0
-RUN apk add --no-cache git \
- && git clone --depth 1 --branch ${DASHBOARD_VERSION} https://github.com/meilisearch/Meilisearch-Dashboard.git . \
- && yarn install --frozen-lockfile \
+
+# Install curl & tar, fetch the release archive, strip the top-level folder
+RUN apk add --no-cache curl tar \
+ && npm install --global yarn \
+ && curl -sL "https://github.com/meilisearch/Meilisearch-Dashboard/archive/refs/tags/${DASHBOARD_VERSION}.tar.gz" \
+    | tar xz --strip-components=1
+
+# Install deps and build
+RUN yarn install --frozen-lockfile \
  && yarn build
 
 ########################################
-# 2) Final image: serve Meili + UI via Nginx
+# 3) Final image: Nginx serves UI + MeiliSearch
 ########################################
 FROM nginx:alpine
-LABEL maintainer=kagioshi
+LABEL maintainer="kagioshi"
 
-# Copy Meili binary
+# 3a) Copy the MeiliSearch binary from the meili stage
 COPY --from=meili /bin/meilisearch /bin/meilisearch
 
-# Copy built UI to Nginx
+# 3b) Copy the built Dashboard UI into Nginx's html root
 COPY --from=ui-builder /app/dist /usr/share/nginx/html
 
-# Copy optional custom Meili config
+# 3c) (Optional) Copy your custom TOML if you have one;
+#      else remove these two lines and let env vars drive Meili.
 COPY meilisearch-config.toml /etc/meilisearch/config.toml
 
-# Expose HTTP and Meili API ports
+# Expose ports: 80 for UI, 7700 for the API
 EXPOSE 80 7700
 
-# Run both Nginx (for UI) and Meili:
-#   - Nginx serves the UI on port 80  
-#   - Meili listens on 0.0.0.0:7700
+# 3d) Entrypoint: start Nginx (serves UI) then MeiliSearch
 CMD ["sh", "-c", "\
     nginx && \
-    meilisearch --config-file /etc/meilisearch/config.toml \
+    /bin/meilisearch \
+      --config-file /etc/meilisearch/config.toml \
 "]
