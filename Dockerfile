@@ -18,7 +18,7 @@ RUN apk add --no-cache git \
 # 2) Final image: serve Meili + UI via Nginx
 ########################################
 FROM nginx:alpine
-LABEL maintainer="you@example.com"
+LABEL maintainer=kagioshi
 
 # Copy Meili binary
 COPY --from=meili /usr/bin/meilisearch /usr/bin/meilisearch
