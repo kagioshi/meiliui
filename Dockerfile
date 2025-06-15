@@ -21,7 +21,7 @@ FROM nginx:alpine
 LABEL maintainer=kagioshi
 
 # Copy Meili binary
-COPY --from=meili /usr/bin/meilisearch /usr/bin/meilisearch
+COPY --from=meili /bin/meilisearch /bin/meilisearch
 
 # Copy built UI to Nginx
 COPY --from=ui-builder /app/dist /usr/share/nginx/html
