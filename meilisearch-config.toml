@@ -1,0 +1,6 @@
+# meilisearch-config.toml
+server-address = "0.0.0.0"
+server-port    = 7700
+log-level      = "info"
+http-payload-limit = "10mb"
+max-indexing-threads = 4
