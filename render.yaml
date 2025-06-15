@@ -1,10 +1,48 @@
 services:
   - type: web
-    name: meili-free-with-ui
+    name: meili
     env: docker
-    repo: https://github.com/kagioshi/meiliui
-    plan: free
-    # No `disk:` section (ephemeral storage only)
+    plan: standard
+
+    # ────────────────────────────────────────────────────────────
+    # 1) Attach your persistent disk (you already have this ✅)
+    # ────────────────────────────────────────────────────────────
+    disk:
+      name: meili-data
+      mountPath: /meili-data
+      sizeGB: 5
+
+    # ────────────────────────────────────────────────────────────
+    # 2) Expose ports for both the UI (80) and Meili API (7700)
+    # ────────────────────────────────────────────────────────────
     ports:
-      - internal: 80
-      - internal: 7700
+      - internal: 80     # Dashboard UI
+      - internal: 7700   # Meilisearch HTTP API
+
+    # ────────────────────────────────────────────────────────────
+    # 3) Environment variables
+    # ────────────────────────────────────────────────────────────
+    envVars:
+      # Meilisearch API binding
+      - key: MEILI_HTTP_ADDR
+        value: "0.0.0.0:7700"
+
+      # Your master key (auto‐generated)
+      - key: MEILI_MASTER_KEY
+        generateValue: true
+
+      # Where Meili stores its data
+      - key: MEILI_DB_PATH
+        value: "/meili-data"
+
+      # Set your environment (you had “development”—switch to production for real workloads)
+      - key: MEILI_ENV
+        value: "production"
+
+      # (Optional) Pin Meili version without touching the Dockerfile
+      - key: MEILI_VERSION
+        value: "v0.28.0"
+
+      # (If using a self-ping or external uptime monitor)
+      - key: APP_URL
+        value: "https://meili.onrender.com/healthz"
