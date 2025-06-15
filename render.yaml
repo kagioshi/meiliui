@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: meili-free-with-ui
+    env: docker
+    repo: https://github.com/kagioshi/meiliui
+    plan: free
+    # No `disk:` section (ephemeral storage only)
+    ports:
+      - internal: 80
+      - internal: 7700
